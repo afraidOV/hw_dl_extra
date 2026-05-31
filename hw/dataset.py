@@ -11,17 +11,7 @@ from torch.utils.data import Dataset
 
 @dataclass(frozen=True)
 class MathVQASample:
-    """One visual-math QA example.
-
-    Attributes:
-        id: Stable example id.
-        image: PIL image in RGB mode.
-        question: User question without hidden answer.
-        options: Multiple-choice options, e.g. ["A) ...", "B) ..."].
-        answer: Gold answer, usually "A"/"B"/"C"/"D" for public toy data.
-        subject: Topic label, e.g. geometry/algebra/plots.
-        source: Dataset/source label.
-    """
+    """One visual-math QA example."""
 
     id: str
     image: Image.Image
@@ -33,10 +23,6 @@ class MathVQASample:
 
 
 def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
-    """Load a jsonl file.
-
-    This helper is provided; you may use or replace it.
-    """
     path = Path(path)
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -59,19 +45,7 @@ def sanitize_question(text: str) -> str:
 
 
 class MathVQADataset(Dataset[MathVQASample]):
-    """Dataset for manifest-based visual mathematical QA.
-
-    Expected manifest fields:
-        id, split, image, question, options, answer, subject, source(optional)
-
-    TODO for students:
-        - read manifest;
-        - filter by split;
-        - support max_samples;
-        - resolve image paths relative to manifest directory;
-        - open images as RGB PIL.Image;
-        - return MathVQASample.
-    """
+    """Dataset for manifest-based visual mathematical QA."""
 
     def __init__(
         self,
@@ -84,14 +58,26 @@ class MathVQADataset(Dataset[MathVQASample]):
         self.split = split
         self.max_samples = max_samples
 
-        # TODO: implement loading/filtering.
-        # Hint: use load_jsonl(self.manifest_path).
-        raise NotImplementedError("Implement MathVQADataset.__init__")
+        rows = load_jsonl(self.manifest_path)
+        rows = [r for r in rows if r.get("split") == split]
+        if max_samples is not None:
+            rows = rows[:max_samples]
+        self.rows = rows
 
     def __len__(self) -> int:
-        # TODO: return number of filtered rows.
-        raise NotImplementedError("Implement MathVQADataset.__len__")
+        return len(self.rows)
 
     def __getitem__(self, idx: int) -> MathVQASample:
-        # TODO: construct and return MathVQASample.
-        raise NotImplementedError("Implement MathVQADataset.__getitem__")
+        row = self.rows[idx]
+        image_path = self.root / row["image"]
+        image = Image.open(image_path).convert("RGB")
+        question = sanitize_question(row["question"])
+        return MathVQASample(
+            id=row["id"],
+            image=image,
+            question=question,
+            options=row["options"],
+            answer=row["answer"],
+            subject=row.get("subject", "unknown"),
+            source=row.get("source", "unknown"),
+        )
