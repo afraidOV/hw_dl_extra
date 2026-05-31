@@ -30,7 +30,7 @@ batch size: 1
 ## Результаты
 
 ```text
-public tests: pytest -q tests_public — все тесты проходят
+public tests: 14 passed in 23.23s
 train loss: ~2.3 (mock LM, 3 шага)
 benchmark accuracy: N/A (Track A, mock models без реального VLM)
 ```
